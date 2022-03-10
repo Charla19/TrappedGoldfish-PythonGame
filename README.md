@@ -1,2 +1,4 @@
 # TrappedGoldfish-PythonGame
-Un projet de jeu d'évitement qu'on a réalisé en une semaine durant le challenge Piscine d'intégration python à l'Ecole Supérieur des Technologies de l'Information (ESTI) en juin 2021 et qui a eu le deuxième prix du meilleur projet.  
+Un projet de jeu d'évitement dont le visuel est un univers marin.
+Le joueur sera dans la peau d'un petit poisson dorée qui malgré lui s'est trouvé dans champ marin hôstile peuplé de gros réquins.Il n'aura pour seul arme que des projectiles (bulles d'eau capable d'éliminer les réquins).
+
