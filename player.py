@@ -1,9 +1,8 @@
+import math
+
 import pygame
 
-import game
 from projectile import Projectile
-
-# Créer une première classe qui va representer le joueur
 from sounds import SoundManager
 
 
@@ -11,41 +10,57 @@ class Player(pygame.sprite.Sprite):
     def __init__(self, game):
         super().__init__()
         self.game = game
-        self.health = 100
+        self.health = self.max_health = 100
         self.attack = 20
-        self.max_health = 100
-        self.velocity = 5
+        self.velocity = 300.0
         self.sound_manager = SoundManager()
         self.all_projectile = pygame.sprite.Group()
-        self.image = pygame.image.load("assets/poisson.png")
-        # récupérer la position du joueur
-        self.rect = self.image.get_rect()
-        self.rect.y = 550
+        self.image = pygame.image.load("assets/poisson.png").convert_alpha()
+        self.mask = pygame.mask.from_surface(self.image)
+        self.rect = self.image.get_rect(topleft=(24, 320))
+        self.position_y = float(self.rect.y)
+        self.speed_y = 0.0
+        self.invulnerable_until = 0.0
+        self.last_shot = -1.0
 
     def damage(self, amount):
-        if self.health - amount > amount:
-            self.health -= amount
-        else:
-            # Si le joueur n'a plus de point de vie
+        if not self.game.is_playing or self.game.shield_remaining > 0:
+            return
+        now = self.game.elapsed
+        if now < self.invulnerable_until:
+            return
+        self.invulnerable_until = now + 0.7
+        self.game.break_combo()
+        self.health = max(0, self.health - amount)
+        if self.health <= 0:
             self.game.game_over()
 
-    def update_health_bar(self, surface):
-        # Dessiner la barre de vie
-        pygame.draw.rect(surface, (60, 60, 60), [self.rect.x + 5, self.rect.y, self.max_health, 5])
-        pygame.draw.rect(surface, (100, 200, 60), [self.rect.x + 5, self.rect.y, self.health, 5])
-
     def launch_projectile(self):
-        # Créer une nouvelle instance de la classe projectile
+        if not self.game.is_playing or self.game.paused:
+            return False
+        if self.game.elapsed - self.last_shot < 0.18 - 1e-8:
+            return False
+        self.last_shot = self.game.elapsed
         self.all_projectile.add(Projectile(self))
-        # jouer le son
-        self.sound_manager.play('projectile')
+        self.sound_manager.play("projectile")
+        return True
 
-    def move_up(self):
-        # Si le joueur n'est pas en collision avec un obstacle
-        if not self.game.check_collision(self, self.game.all_obstacle):
-            self.rect.x = self.velocity
+    def move(self, direction, dt):
+        if self.rect.y != round(self.position_y):
+            self.position_y = float(self.rect.y)
+        target = direction * self.velocity
+        rate = 28 if direction else 34
+        decay = math.exp(-rate * dt)
+        self.position_y += target * dt + (self.speed_y - target) * (1 - decay) / rate
+        self.speed_y = target + (self.speed_y - target) * decay
+        low, high = self.game.PLAY_TOP, self.game.PLAY_BOTTOM - self.rect.height
+        self.position_y = max(low, min(high, self.position_y))
+        self.rect.y = round(self.position_y)
+        if self.position_y in (low, high):
+            self.speed_y = 0.0
 
-        self.rect.y -= self.velocity
+    def move_up(self, dt=1 / 60):
+        self.move(-1, dt)
 
-    def move_down(self):
-        self.rect.y += self.velocity
+    def move_down(self, dt=1 / 60):
+        self.move(1, dt)

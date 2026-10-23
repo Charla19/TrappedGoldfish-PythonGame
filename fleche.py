@@ -7,14 +7,14 @@ class FlecheFallEvent:
     # lors du chargement -> créer un compteur
     def __init__(self, game):
         self.percent = 0
-        self.percent_speed = 60
+        self.percent_speed = 20
         self.game = game
 
         #définir un groupe de sprite pour stocker nos lances
         self.all_lance = pygame.sprite.Group()
 
-    def add_percent(self):
-        self.percent += self.percent_speed / 100
+    def add_percent(self, dt):
+        self.percent = min(100, self.percent + self.percent_speed * dt)
 
     def is_full_loaded(self):
         return self.percent >= 100
@@ -31,14 +31,13 @@ class FlecheFallEvent:
     def attempt_fall(self):
         # la jauge est totalement chargé
         if self.is_full_loaded():
-            print("Pluie de flèches !!")
             self.lance_fall()
             self.reset_percent()
 
-    def update_bar(self, surface):
+    def update_bar(self, surface, dt):
 
         # ajouter du pourcentage à la barre
-        self.add_percent()
+        self.add_percent(dt)
 
         # Appel de la méthode pour essayer de déclancher la pluie
         self.attempt_fall()
@@ -48,12 +47,12 @@ class FlecheFallEvent:
             0, # axe des x
             surface.get_height() - 10, # axe des y
             surface.get_width(), # longueur de la fenêtre
-            1 # épaisseur de la barre
+            7 # épaisseur de la barre
         ])
         # barre rouge commme jauge d'évènement
         pygame.draw.rect(surface, (187, 11, 11), [
             0, # axe des x
             surface.get_height() - 10, # axe des y
             (surface.get_width() / 100) * self.percent, # longueur de la fenêtre
-            1 # épaisseur de la barre
+            7 # épaisseur de la barre
         ])

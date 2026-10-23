@@ -1,45 +1,36 @@
 import pygame
 
-# Définir la classe qui va gérer le projectile
-class Projectile(pygame.sprite.Sprite):
 
-    # Définir le constructeur de cette classe
+class Projectile(pygame.sprite.Sprite):
+    frames = None
+
     def __init__(self, player):
         super().__init__()
         self.player = player
-        self.velocity = 15
-        self.image = pygame.image.load('assets/bulles.png')
-        self.image = pygame.transform.scale(self.image, (40,40))
-        self.rect = self.image.get_rect()
-        self.rect.x = player.rect.x + 90
-        self.rect.y = player.rect.y + 25
-        self.origin_image = self.image
-        self.angle = 0
-
-    # Rotation des projectiles
-    def rotate(self):
-        self.angle += 7
-        self.image = pygame.transform.rotozoom(self.origin_image, self.angle, 1)
-        self.rect = self.image.get_rect(center = self.rect.center)
+        self.velocity = 900.0
+        if Projectile.frames is None:
+            source = pygame.image.load("assets/bulles.png").convert_alpha()
+            source = pygame.transform.smoothscale(source, (36, 36))
+            Projectile.frames = []
+            for angle in range(0, 360, 10):
+                frame = pygame.transform.rotozoom(source, angle, 1)
+                Projectile.frames.append((frame, pygame.mask.from_surface(frame)))
+        self.angle = 0.0
+        self.image, self.mask = Projectile.frames[0]
+        self.rect = self.image.get_rect(center=(player.rect.right + 12, player.rect.centery))
+        self.position = pygame.Vector2(self.rect.center)
 
     def remove(self):
-        self.player.all_projectile.remove(self)
+        self.kill()
 
-    def move(self):
-        self.rect.x += self.velocity
-        self.rotate()
-
-        # Vérifier si le projectile entre en colliqion avec un obstacle
+    def move(self, dt=1 / 60):
+        self.position.x += self.velocity * dt
+        self.angle = (self.angle + 420 * dt) % 360
+        self.image, self.mask = Projectile.frames[int(self.angle // 10)]
+        self.rect = self.image.get_rect(center=(round(self.position.x), round(self.position.y)))
         for obstacle in self.player.game.check_collision(self, self.player.game.all_obstacle):
-            # Supprimer le projectile
-            self.remove()
-            # Infliger des dégats
+            self.kill()
             obstacle.damage(self.player.attack)
-        if self.player.game.check_collision(self, self.player.game.all_obstacle):
-            self.remove()
-
-        # Vérifier si notre projectile n'est plus présent sur l'écran
-        if self.rect.x > 961:
-            # Supprimer le projectile  de l'écran
-            self.remove()
-
+            break
+        if self.rect.left > self.player.game.WIDTH:
+            self.kill()

@@ -104,6 +104,9 @@ celerybeat.pid
 # Environments
 .env
 .venv
+.build-venv/
+scores.json
+.scores-*.tmp
 env/
 venv/
 ENV/

@@ -1,31 +1,31 @@
-import pygame
 import random
 
-# créer une classe pour gérer cette lance
-from sounds import SoundManager
+import pygame
 
 
 class Lance(pygame.sprite.Sprite):
+    image_source = None
+    image_mask = None
 
     def __init__(self, fleche):
         super().__init__()
-        # définir l'image associé à cette lance
-        self.sound_manager = SoundManager()
-        self.image = pygame.image.load('assets/espadon.png')
-        self.rect = self.image.get_rect()
-        self.velocity = random.randint(2, 7)
-        self.rect.y = random.randint(0, 650)
-        self.rect.x = 961
         self.fleche = fleche
+        if Lance.image_source is None:
+            Lance.image_source = pygame.image.load("assets/espadon.png").convert_alpha()
+            Lance.image_mask = pygame.mask.from_surface(Lance.image_source)
+        self.image, self.mask = Lance.image_source, Lance.image_mask
+        self.rect = self.image.get_rect()
+        game = fleche.game
+        self.rect.topleft = (game.WIDTH, random.randint(game.PLAY_TOP + 8,
+                                                      game.PLAY_BOTTOM - self.rect.height - 8))
+        self.x = float(self.rect.x)
+        self.velocity = random.uniform(150, 390)
 
-
-    def fall(self):
-        self.rect.x -= self.velocity
-
-        # vérifier si la lance touche le joueur
-        if self.fleche.game.check_collision(
-                self, self.fleche.game.all_players
-        ):
-            print("joueur touché")
-            self.fleche.game.player.damage(2.7)
-            self.sound_manager.play('click')
+    def fall(self, dt=1 / 60):
+        self.x -= self.velocity * dt
+        self.rect.x = round(self.x)
+        if self.rect.right < 0:
+            self.kill()
+        elif self.fleche.game.check_collision(self, self.fleche.game.all_players):
+            self.fleche.game.player.damage(8)
+            self.kill()
